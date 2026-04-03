@@ -196,6 +196,10 @@ def enrich_businesses(businesses: list[dict], progress_callback=None) -> list[di
                 if first_word.replace("-", "").isalpha():
                     first_name = first_word.capitalize()
 
+        # Final fallback: dash if still empty
+        if not first_name:
+            first_name = "-"
+
         # Build notes
         notes_parts = []
         if biz.get("rating"):
