@@ -114,15 +114,23 @@ def extract_detail(page):
 def scrape(query, max_results):
     results = []
 
+    import shutil
+    chromium_path = shutil.which("chromium-browser") or shutil.which("chromium") or shutil.which("google-chrome")
+
     with sync_playwright() as p:
-        browser = p.chromium.launch(
+        launch_kwargs = dict(
             headless=True,
             args=[
                 "--disable-blink-features=AutomationControlled",
                 "--no-sandbox",
                 "--disable-dev-shm-usage",
+                "--disable-gpu",
             ],
         )
+        if chromium_path:
+            launch_kwargs["executable_path"] = chromium_path
+
+        browser = p.chromium.launch(**launch_kwargs)
 
         context = browser.new_context(
             viewport={"width": 1920, "height": 1080},
