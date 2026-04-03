@@ -102,6 +102,7 @@ def run_scraper():
     col_a.metric("Total Leads", len(df))
     col_b.metric("With Email", len(df[df["email"] != ""]))
     col_c.metric("With Phone", len(df[df["phone"] != ""]))
+    
 
     # Download
     csv_bytes = to_csv_bytes(enriched)

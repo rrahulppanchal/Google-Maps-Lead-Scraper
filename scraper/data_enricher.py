@@ -99,8 +99,8 @@ def _extract_contact_name(soup: BeautifulSoup) -> str:
     return ""
 
 
-def _name_from_email(email: str) -> str:
-    """Try to extract a person's name from an email address like john.doe@company.com."""
+def _first_name_from_email(email: str) -> str:
+    """Try to extract a first name from an email address like john.doe@company.com or john@company.com."""
     if not email:
         return ""
 
@@ -113,14 +113,11 @@ def _name_from_email(email: str) -> str:
     if local in generic:
         return ""
 
-    # Check for firstname.lastname or firstname_lastname pattern
+    # Check for firstname.lastname or firstname_lastname pattern — take first part
     parts = re.split(r"[._\-]", local)
-    if len(parts) == 2:
-        first, last = parts
-        if first.isalpha() and last.isalpha() and len(first) > 1 and len(last) > 1:
-            candidate = f"{first.capitalize()} {last.capitalize()}"
-            if _is_valid_person_name(candidate):
-                return candidate
+    first = parts[0]
+    if first.isalpha() and len(first) > 1:
+        return first.capitalize()
 
     return ""
 
@@ -180,13 +177,24 @@ def enrich_businesses(businesses: list[dict], progress_callback=None) -> list[di
 
         email = website_data["emails"][0] if website_data["emails"] else ""
 
-        # Determine contact name with strict validation:
-        # 1. Try name extracted from website (only if it's a valid person name)
-        # 2. Try to derive name from email (e.g., john.doe@company.com)
-        # 3. Leave empty — don't pollute with business names or nav text
-        contact_name = website_data["contact_name"]  # already validated
-        if not contact_name:
-            contact_name = _name_from_email(email)
+        # Determine first name:
+        # 1. Try name extracted from website (valid person name) — take first word
+        # 2. Try to derive first name from email (e.g., john.doe@company.com → John)
+        # 3. Fall back to first word of the business name so it's never empty
+        contact_name = website_data["contact_name"]  # already validated full name
+        if contact_name:
+            first_name = contact_name.split()[0]
+        else:
+            first_name = _first_name_from_email(email)
+
+        # Last resort: use first word of the business name
+        if not first_name:
+            business_name = biz.get("name", "")
+            if business_name:
+                first_word = business_name.split()[0]
+                # Only use it if it looks like a word (not a number/symbol)
+                if first_word.replace("-", "").isalpha():
+                    first_name = first_word.capitalize()
 
         # Build notes
         notes_parts = []
@@ -196,16 +204,15 @@ def enrich_businesses(businesses: list[dict], progress_callback=None) -> list[di
             notes_parts.append(f"Reviews: {biz['reviews']}")
         if biz.get("category"):
             notes_parts.append(f"Category: {biz['category']}")
-        if biz.get("address"):
-            notes_parts.append(f"Address: {biz['address']}")
         if biz.get("website"):
             notes_parts.append(f"Website: {biz['website']}")
 
         enriched.append(
             {
-                "name": contact_name,
+                "firstName": first_name,
                 "email": email,
                 "phone": biz.get("phone", ""),
+                "address": biz.get("address", ""),
                 "company": biz.get("name", ""),
                 "status": "lead",
                 "notes": " | ".join(notes_parts),

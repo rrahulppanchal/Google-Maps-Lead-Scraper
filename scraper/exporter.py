@@ -3,7 +3,7 @@ import io
 import pandas as pd
 
 
-COLUMNS = ["name", "email", "phone", "company", "status", "notes"]
+COLUMNS = ["firstName", "email", "phone", "address", "company", "status", "notes"]
 
 
 def to_dataframe(enriched_data: list[dict]) -> pd.DataFrame:
