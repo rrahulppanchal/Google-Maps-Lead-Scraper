@@ -200,6 +200,11 @@ def enrich_businesses(businesses: list[dict], progress_callback=None) -> list[di
         if not first_name:
             first_name = "-"
 
+        # Append company name to first name
+        company_name = biz.get("name", "")
+        if company_name:
+            first_name = f"{first_name} | {company_name}"
+
         # Build notes
         notes_parts = []
         if biz.get("rating"):
@@ -215,7 +220,7 @@ def enrich_businesses(businesses: list[dict], progress_callback=None) -> list[di
             {
                 "firstName": first_name,
                 "email": email,
-                "phone": biz.get("phone", ""),
+                "phone": biz.get("phone", "").lstrip("0"),
                 "address": biz.get("address", ""),
                 "company": biz.get("name", ""),
                 "status": "lead",
